@@ -25,13 +25,18 @@ func TestMatchToken(t *testing.T) {
 }
 
 func TestScanner(t *testing.T) {
-	code := "!====\n// laskdjflsadjf \n/>."
+	code := "!====\n// laskdjflsadjf \n/><=<\"turing\"42.34."
+
 	expected := []TokenType{
 		BANG_EQUAL,
 		EQUAL_EQUAL,
 		EQUAL,
 		SLASH,
 		GREATER,
+		LESS_EQUAL,
+		LESS,
+		STRING,
+		NUMBER,
 		DOT,
 		EOF,
 	}

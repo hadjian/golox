@@ -1,5 +1,10 @@
 package main
 
+import (
+	"fmt"
+	"strconv"
+)
+
 type Scanner struct {
 	Source  []rune
 	tokens  []Token
@@ -75,8 +80,15 @@ func (s *Scanner) scanToken() {
 	case '\t':
 	case '\n':
 		s.line++
+	case '"':
+		s.string()
 	default:
-		err(s.line, "Unexpected character.")
+		if s.isDigit(r) {
+			s.number()
+		} else {
+			msg := fmt.Sprintf("Unexpected character %c", r)
+			err(s.line, msg)
+		}
 	}
 }
 
@@ -119,4 +131,52 @@ func (s *Scanner) peek() rune {
 		return '\u0000'
 	}
 	return s.Source[s.current]
+}
+
+func (s *Scanner) string() {
+	for s.peek() != '"' && !s.isAtEnd() {
+		if s.peek() == '\n' {
+			s.line++
+		}
+		s.advance()
+	}
+
+	if s.isAtEnd() {
+		err(s.line, "Unterminated string.")
+		return
+	}
+
+	s.advance()
+
+	value := s.Source[s.start+1 : s.current-1]
+	s.addTokenWithLiteral(STRING, value)
+}
+
+func (s *Scanner) isDigit(r rune) bool {
+	return (r >= '0' && r <= '9')
+}
+
+func (s *Scanner) number() {
+	for s.isDigit(s.peek()) {
+		s.advance()
+	}
+	if s.peek() == '.' && s.isDigit(s.peekNext()) {
+		s.advance()
+
+		for s.isDigit(s.peek()) {
+			s.advance()
+		}
+
+	}
+
+	substring := string(s.Source[s.start:s.current])
+	value, _ := strconv.ParseFloat(substring, 64)
+	s.addTokenWithLiteral(NUMBER, value)
+}
+
+func (s *Scanner) peekNext() rune {
+	if s.current+1 >= len(s.Source) {
+		return '\u0000'
+	}
+	return s.Source[s.current+1]
 }
