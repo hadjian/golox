@@ -5,6 +5,29 @@ import (
 	"strconv"
 )
 
+var keywords map[string]TokenType
+
+func init() {
+	keywords = map[string]TokenType{
+		"and":    AND,
+		"class":  CLASS,
+		"else":   ELSE,
+		"false":  FALSE,
+		"for":    FOR,
+		"fun":    FUN,
+		"if":     IF,
+		"nil":    NIL,
+		"or":     OR,
+		"print":  PRINT,
+		"return": RETURN,
+		"super":  SUPER,
+		"this":   THIS,
+		"true":   TRUE,
+		"var":    VAR,
+		"while":  WHILE,
+	}
+}
+
 type Scanner struct {
 	Source  []rune
 	tokens  []Token
@@ -85,6 +108,8 @@ func (s *Scanner) scanToken() {
 	default:
 		if s.isDigit(r) {
 			s.number()
+		} else if s.isAlpha(r) {
+			s.identifier()
 		} else {
 			msg := fmt.Sprintf("Unexpected character %c", r)
 			err(s.line, msg)
@@ -152,6 +177,13 @@ func (s *Scanner) string() {
 	s.addTokenWithLiteral(STRING, value)
 }
 
+func (s *Scanner) peekNext() rune {
+	if s.current+1 >= len(s.Source) {
+		return '\u0000'
+	}
+	return s.Source[s.current+1]
+}
+
 func (s *Scanner) isDigit(r rune) bool {
 	return (r >= '0' && r <= '9')
 }
@@ -174,9 +206,24 @@ func (s *Scanner) number() {
 	s.addTokenWithLiteral(NUMBER, value)
 }
 
-func (s *Scanner) peekNext() rune {
-	if s.current+1 >= len(s.Source) {
-		return '\u0000'
+func (s *Scanner) identifier() {
+	for s.isAlphaNumeric(s.peek()) {
+		s.advance()
 	}
-	return s.Source[s.current+1]
+	text := s.Source[s.start:s.current]
+	tokenType, ok := keywords[string(text)]
+	if ok == false {
+		tokenType = IDENTIFIER
+	}
+	s.addToken(tokenType)
+}
+
+func (s *Scanner) isAlpha(r rune) bool {
+	return (r >= 'a' && r <= 'z') ||
+		(r >= 'A' && r <= 'Z') ||
+		(r == '_')
+}
+
+func (s *Scanner) isAlphaNumeric(r rune) bool {
+	return s.isAlpha(r) || s.isDigit(r)
 }
