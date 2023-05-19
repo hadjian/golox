@@ -1,3 +1,4 @@
+//go:generate go build -o ./generateAst ./cmd/generateAst
 package main
 
 import (
@@ -14,8 +15,9 @@ func main() {
 		fmt.Println("Usage: golox [script]")
 		os.Exit(64)
 	} else if len(os.Args) == 2 {
-		if err := runFile(os.Args[1]); err != nil {
-			fmt.Println(err)
+		err := runFile(os.Args[1])
+		if err != nil {
+			os.Exit(1)
 		}
 	} else {
 		if err := runPrompt(); err != nil {
@@ -54,5 +56,13 @@ func runPrompt() error {
 }
 
 func run(script string) {
-	fmt.Println(script)
+	scanner := NewScanner(script)
+	tokens := scanner.scanTokens()
+	parser := NewParser(tokens)
+	expr := parser.parse()
+
+	if hadError {
+		return
+	}
+	fmt.Println((&AstPrinter{}).Print(expr))
 }

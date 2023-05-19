@@ -112,7 +112,7 @@ func (s *Scanner) scanToken() {
 			s.identifier()
 		} else {
 			msg := fmt.Sprintf("Unexpected character %c", r)
-			err(s.line, msg)
+			errLine(s.line, msg)
 		}
 	}
 }
@@ -167,7 +167,7 @@ func (s *Scanner) string() {
 	}
 
 	if s.isAtEnd() {
-		err(s.line, "Unterminated string.")
+		errLine(s.line, "Unterminated string.")
 		return
 	}
 
