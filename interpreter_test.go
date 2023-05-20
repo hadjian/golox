@@ -61,6 +61,20 @@ func TestAddition(t *testing.T) {
 			reflect.TypeOf(float64(0)),
 			4.0,
 		},
+		{
+			16.0,
+			Token{tType: LESS, lexeme: "<"},
+			4.0,
+			reflect.TypeOf(bool(true)),
+			false,
+		},
+		{
+			4.0,
+			Token{tType: LESS, lexeme: "<"},
+			16.0,
+			reflect.TypeOf(bool(true)),
+			true,
+		},
 	}
 
 	i := Interpreter{}

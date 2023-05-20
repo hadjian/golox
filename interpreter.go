@@ -12,6 +12,18 @@ func (i *Interpreter) VisitBinary(b *Binary) any {
 	right := i.Evaluate(b.Right)
 
 	switch b.Operator.tType {
+	case BANG_EQUAL:
+		return left != right
+	case EQUAL_EQUAL:
+		return left == right
+	case GREATER:
+		return left.(float64) > right.(float64)
+	case GREATER_EQUAL:
+		return left.(float64) >= right.(float64)
+	case LESS:
+		return left.(float64) < right.(float64)
+	case LESS_EQUAL:
+		return left.(float64) <= right.(float64)
 	case MINUS:
 		return left.(float64) - right.(float64)
 	case PLUS:
@@ -35,7 +47,6 @@ func (i *Interpreter) VisitBinary(b *Binary) any {
 
 func (i *Interpreter) VisitGrouping(g *Grouping) any {
 	return i.Evaluate(g.Expression)
-
 }
 
 func (i *Interpreter) VisitLiteral(l *Literal) any {
