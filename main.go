@@ -66,3 +66,7 @@ func run(script string) {
 	}
 	fmt.Println((&AstPrinter{}).Print(expr))
 }
+
+func runtimeError(err error) {
+
+}

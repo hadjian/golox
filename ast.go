@@ -1,14 +1,14 @@
 package main
 
 type Visitor interface {
-	VisitBinary(b *Binary) any
-	VisitGrouping(g *Grouping) any
-	VisitLiteral(l *Literal) any
-	VisitUnary(u *Unary) any
+	VisitBinary(b *Binary) (any, error)
+	VisitGrouping(g *Grouping) (any, error)
+	VisitLiteral(l *Literal) (any, error)
+	VisitUnary(u *Unary) (any, error)
 }
 
 type Expr interface {
-	Accept(v Visitor) any
+	Accept(v Visitor) (any, error)
 }
 
 type Binary struct {
@@ -17,7 +17,7 @@ type Binary struct {
 	Right    Expr
 }
 
-func (b *Binary) Accept(v Visitor) any {
+func (b *Binary) Accept(v Visitor) (any, error) {
 	return v.VisitBinary(b)
 }
 
@@ -25,7 +25,7 @@ type Grouping struct {
 	Expression Expr
 }
 
-func (g *Grouping) Accept(v Visitor) any {
+func (g *Grouping) Accept(v Visitor) (any, error) {
 	return v.VisitGrouping(g)
 }
 
@@ -33,7 +33,7 @@ type Literal struct {
 	Value any
 }
 
-func (l *Literal) Accept(v Visitor) any {
+func (l *Literal) Accept(v Visitor) (any, error) {
 	return v.VisitLiteral(l)
 }
 
@@ -42,6 +42,6 @@ type Unary struct {
 	Right    Expr
 }
 
-func (u *Unary) Accept(v Visitor) any {
+func (u *Unary) Accept(v Visitor) (any, error) {
 	return v.VisitUnary(u)
 }

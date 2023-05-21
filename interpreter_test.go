@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -85,7 +86,7 @@ func TestAddition(t *testing.T) {
 		b.Right = &Literal{test.right}
 		expr := (&AstPrinter{}).Print(&b)
 
-		output := i.Evaluate(&b)
+		output, _ := i.Evaluate(&b)
 		outValue := reflect.ValueOf(output)
 		if outValue.Type().ConvertibleTo(test.valueType) {
 			output := outValue.Convert(test.valueType).Interface()
@@ -98,4 +99,9 @@ func TestAddition(t *testing.T) {
 			t.Errorf("Could not cast ouput %v to float64", output)
 		}
 	}
+}
+
+func TestStringify(t *testing.T) {
+	i := Interpreter{}
+	fmt.Println(i.stringify(int(134235.0)))
 }
