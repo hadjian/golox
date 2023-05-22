@@ -12,7 +12,7 @@ type RuntimeError struct {
 }
 
 func (re *RuntimeError) Error() string {
-	return re.msg
+	return fmt.Sprintf("%v \n[line %v]", re.msg, re.token.line)
 }
 
 type Interpreter struct {

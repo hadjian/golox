@@ -1,14 +1,16 @@
-//go:generate go build -o ./generateAst ./cmd/generateAst
 package main
 
 import (
 	"bufio"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 )
 
 var hadError = false
+var hadRuntimeError = false
+var interpreter = Interpreter{}
 
 func main() {
 	if len(os.Args) > 2 {
@@ -34,6 +36,9 @@ func runFile(f string) error {
 	run(string(data))
 	if hadError {
 		os.Exit(65)
+	}
+	if hadRuntimeError {
+		os.Exit(70)
 	}
 	return nil
 }
@@ -64,9 +69,10 @@ func run(script string) {
 	if hadError {
 		return
 	}
-	fmt.Println((&AstPrinter{}).Print(expr))
+	interpreter.Interpret(expr)
 }
 
 func runtimeError(err error) {
-
+	log.Println(err)
+	hadRuntimeError = true
 }
