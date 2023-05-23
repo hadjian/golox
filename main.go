@@ -17,8 +17,7 @@ func main() {
 		fmt.Println("Usage: golox [script]")
 		os.Exit(64)
 	} else if len(os.Args) == 2 {
-		err := runFile(os.Args[1])
-		if err != nil {
+		if err := runFile(os.Args[1]); err != nil {
 			os.Exit(1)
 		}
 	} else {

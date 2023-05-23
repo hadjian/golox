@@ -1,6 +1,10 @@
 // This is the parser implementation of the Lox language
 // It implements the following grammar
 //
+// program    -> statement* EOF;
+// statement  -> exprStmt | printStmt;
+// exprStmt   -> expression ";";
+// printStmt  -> "print" expression ";";
 // expression -> equality;
 // equality   -> comparison ( ( "!=" | "==" ) ) comparison )*;
 // comparison -> term ( ( ">" | "<" | ">=" | "<=" ) term)*;
@@ -29,11 +33,41 @@ func NewParser(tokens []Token) *Parser {
 	}
 }
 
-func (p *Parser) parse() Expr {
-	if expr, err := p.expression(); err == nil {
-		return expr
+func (p *Parser) parse() []Stmt {
+	statements := []Stmt{}
+	for !p.isAtEnd() {
+		if stmt, err := p.statement(); err != nil {
+			return nil
+		} else {
+			statements = append(statements, stmt)
+		}
+	}
+	return statements
+}
+
+func (p *Parser) statement() (Stmt, error) {
+	if p.match(PRINT) {
+		return p.printStatement()
+	}
+
+	return p.expressionStatement()
+}
+
+func (p *Parser) printStatement() (Stmt, error) {
+	if value, err := p.expression(); err != nil {
+		return nil, err
 	} else {
-		return nil
+		p.consume(SEMICOLON, "Expect ';' after value.")
+		return &Print{value}, nil
+	}
+}
+
+func (p *Parser) expressionStatement() (Stmt, error) {
+	if expr, err := p.expression(); err != nil {
+		return nil, err
+	} else {
+		p.consume(SEMICOLON, "Expected ';' after expression.")
+		return &Expression{expr}, nil
 	}
 }
 
