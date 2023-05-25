@@ -1,17 +1,25 @@
 // This is the parser implementation of the Lox language
 // It implements the following grammar
 //
-// program    -> statement* EOF;
-// statement  -> exprStmt | printStmt;
-// exprStmt   -> expression ";";
-// printStmt  -> "print" expression ";";
-// expression -> equality;
-// equality   -> comparison ( ( "!=" | "==" ) ) comparison )*;
-// comparison -> term ( ( ">" | "<" | ">=" | "<=" ) term)*;
-// term       -> factor ( ( "+" | "-" ) factor)*;
-// factor     -> unary ( ( "/" | "*" ) unary )*;
-// unary      -> ( "!" | "-") unary | primary;
-// primary    -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")";
+//			  program    -> statement* EOF;
+//			  decl       -> varDecl | statement;
+//			  varDecl    -> "var" IDENTIFIER ( "=" expression )? ";";
+//			  statement  -> exprStmt | printStmt;
+//			  exprStmt   -> expression ";";
+//			  printStmt  -> "print" expression ";";
+//			  expression -> equality;
+//			  equality   -> comparison ( ( "!=" | "==" ) ) comparison )*;
+//			  comparison -> term ( ( ">" | "<" | ">=" | "<=" ) term)*;
+//			  term       -> factor ( ( "+" | "-" ) factor)*;
+//				factor     -> unary ( ( "/" | "*" ) unary )*;
+//				unary      -> ( "!" | "-") unary | primary;
+//				primary    -> NUMBER     |
+//		                  STRING     |
+//						          "true"     |
+//						          "false"    |
+//						          "nil"      |
+//	                   IDENTIFIER |
+//						          "("expression")";
 package main
 
 type ParseError struct {
@@ -36,13 +44,48 @@ func NewParser(tokens []Token) *Parser {
 func (p *Parser) parse() []Stmt {
 	statements := []Stmt{}
 	for !p.isAtEnd() {
-		if stmt, err := p.statement(); err != nil {
-			return nil
-		} else {
-			statements = append(statements, stmt)
-		}
+		statements = append(statements, p.declaration())
 	}
 	return statements
+}
+
+func (p *Parser) declaration() Stmt {
+	if p.match(VAR) {
+		if stmt, err := p.varDeclaration(); err != nil {
+			p.synchronize()
+			return nil
+		} else {
+			return stmt
+		}
+	}
+	if stmt, err := p.statement(); err != nil {
+		p.synchronize()
+		return nil
+	} else {
+		return stmt
+	}
+}
+
+func (p *Parser) varDeclaration() (Stmt, error) {
+	errMsg := "Expected identifier after 'var'."
+	var varID Token
+	var err error
+	if varID, err = p.consume(IDENTIFIER, errMsg); err != nil {
+		return nil, err
+	}
+	// Check if there is an initializer expression
+	var initializer Expr
+	if p.match(EQUAL) {
+		if initializer, err = p.expression(); err != nil {
+			return nil, err
+
+		}
+	}
+	errMsg = "Expected ';' after variable declaration."
+	if _, err = p.consume(SEMICOLON, errMsg); err != nil {
+		return nil, err
+	}
+	return &Var{varID, initializer}, nil
 }
 
 func (p *Parser) statement() (Stmt, error) {
@@ -198,6 +241,8 @@ func (p *Parser) primary() (Expr, error) {
 		return &Literal{nil}, nil
 	case p.match(NUMBER, STRING):
 		return &Literal{p.previous().literal}, nil
+	case p.match(IDENTIFIER):
+		return &Variable{p.previous()}, nil
 	case p.match(LEFT_PAREN):
 		var expr Expr
 		var err error

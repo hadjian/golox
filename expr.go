@@ -4,6 +4,7 @@ type ExprVisitor interface {
 	VisitBinary(b *Binary) (any, error)
 	VisitGrouping(g *Grouping) (any, error)
 	VisitLiteral(l *Literal) (any, error)
+	VisitVariableExpr(v *Variable) (any, error)
 	VisitUnary(u *Unary) (any, error)
 }
 
@@ -35,6 +36,14 @@ type Literal struct {
 
 func (l *Literal) Accept(v ExprVisitor) (any, error) {
 	return v.VisitLiteral(l)
+}
+
+type Variable struct {
+	name Token
+}
+
+func (ev *Variable) Accept(v ExprVisitor) (any, error) {
+	return v.VisitVariableExpr(ev)
 }
 
 type Unary struct {

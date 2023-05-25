@@ -10,7 +10,7 @@ import (
 
 var hadError = false
 var hadRuntimeError = false
-var interpreter = Interpreter{}
+var interpreter = NewInterpreter()
 
 func main() {
 	if len(os.Args) > 2 {
@@ -63,12 +63,12 @@ func run(script string) {
 	scanner := NewScanner(script)
 	tokens := scanner.scanTokens()
 	parser := NewParser(tokens)
-	expr := parser.parse()
+	stmt := parser.parse()
 
 	if hadError {
 		return
 	}
-	interpreter.Interpret(expr)
+	interpreter.Interpret(stmt)
 }
 
 func runtimeError(err error) {

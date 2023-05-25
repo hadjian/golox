@@ -16,14 +16,28 @@ func (re *RuntimeError) Error() string {
 }
 
 type Interpreter struct {
+	environment Environment
 }
 
-func (i *Interpreter) Interpret(expr Expr) {
-	value, err := i.Evaluate(expr)
-	if err != nil {
-		runtimeError(err)
+func NewInterpreter() *Interpreter {
+	values := make(map[string]any)
+	env := Environment{values}
+	return &Interpreter{
+		environment: env,
 	}
-	fmt.Println(i.stringify(value))
+}
+
+func (i *Interpreter) Interpret(stmts []Stmt) {
+	for _, stmt := range stmts {
+		if err := i.Execute(stmt); err != nil {
+			runtimeError(err)
+			break
+		}
+	}
+}
+
+func (i *Interpreter) Execute(stmt Stmt) error {
+	return stmt.Accept(i)
 }
 
 func (i *Interpreter) Evaluate(expr Expr) (any, error) {
@@ -95,6 +109,22 @@ func (i *Interpreter) VisitLiteral(l *Literal) (any, error) {
 	return l.Value, nil
 }
 
+func (i *Interpreter) VisitVariableExpr(expr *Variable) (any, error) {
+	return i.environment.Get(expr.name)
+}
+
+func (i *Interpreter) VisitVarStmt(stmt *Var) error {
+	var value any
+	var err error
+	if stmt.initializer != nil {
+		if value, err = i.Evaluate(stmt.initializer); err != nil {
+			return err
+		}
+	}
+	i.environment.Define(stmt.name.lexeme, value)
+	return nil
+}
+
 func (i *Interpreter) VisitUnary(u *Unary) (any, error) {
 	var right interface{}
 	var err error
@@ -112,6 +142,22 @@ func (i *Interpreter) VisitUnary(u *Unary) (any, error) {
 		}
 	}
 	return nil, nil
+}
+
+func (i *Interpreter) VisitExpression(e *Expression) error {
+	if _, err := i.Evaluate(e.expr); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (i *Interpreter) VisitPrint(p *Print) error {
+	if value, err := i.Evaluate(p.expr); err != nil {
+		return err
+	} else {
+		fmt.Println(i.stringify(value))
+	}
+	return nil
 }
 
 func (i *Interpreter) isTruthy(value any) bool {
