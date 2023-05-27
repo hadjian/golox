@@ -16,12 +16,11 @@ func (re *RuntimeError) Error() string {
 }
 
 type Interpreter struct {
-	environment Environment
+	environment *Environment
 }
 
 func NewInterpreter() *Interpreter {
-	values := make(map[string]any)
-	env := Environment{values}
+	env := NewEnvironment(nil)
 	return &Interpreter{
 		environment: env,
 	}
@@ -38,6 +37,22 @@ func (i *Interpreter) Interpret(stmts []Stmt) {
 
 func (i *Interpreter) Execute(stmt Stmt) error {
 	return stmt.Accept(i)
+}
+
+func (i *Interpreter) VisitBlock(b *Block) error {
+	i.executeBlock(b.statements, NewEnvironment(i.environment))
+	return nil
+}
+
+func (i *Interpreter) executeBlock(stmts []Stmt, env *Environment) {
+	previous := i.environment
+	i.environment = env
+	for _, stmt := range stmts {
+		if err := i.Execute(stmt); err != nil {
+			break
+		}
+	}
+	i.environment = previous
 }
 
 func (i *Interpreter) Evaluate(expr Expr) (any, error) {

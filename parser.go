@@ -4,7 +4,8 @@
 // program    -> statement* EOF;
 // decl       -> varDecl | statement;
 // varDecl    -> "var" IDENTIFIER ( "=" expression )? ";";
-// statement  -> exprStmt | printStmt;
+// statement  -> exprStmt | printStmt | block;
+// block      -> "{" declaration* "}";
 // exprStmt   -> expression ";";
 // printStmt  -> "print" expression ";";
 // expression -> equality;
@@ -94,8 +95,22 @@ func (p *Parser) statement() (Stmt, error) {
 	if p.match(PRINT) {
 		return p.printStatement()
 	}
-
+	if p.match(LEFT_BRACE) {
+		return p.block()
+	}
 	return p.expressionStatement()
+}
+
+func (p *Parser) block() (Stmt, error) {
+	var statements []Stmt
+	for !p.check(RIGHT_BRACE) && !p.isAtEnd() {
+		statements = append(statements, p.declaration())
+	}
+	msg := "Expected '}' after block."
+	if _, err := p.consume(RIGHT_BRACE, msg); err != nil {
+		return nil, err
+	}
+	return &Block{statements}, nil
 }
 
 func (p *Parser) printStatement() (Stmt, error) {

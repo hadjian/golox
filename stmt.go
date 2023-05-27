@@ -1,6 +1,7 @@
 package main
 
 type StmtVisitor interface {
+	VisitBlock(b *Block) error
 	VisitExpression(e *Expression) error
 	VisitPrint(p *Print) error
 	VisitVarStmt(v *Var) error
@@ -8,6 +9,14 @@ type StmtVisitor interface {
 
 type Stmt interface {
 	Accept(v StmtVisitor) error
+}
+
+type Block struct {
+	statements []Stmt
+}
+
+func (b *Block) Accept(v StmtVisitor) error {
+	return v.VisitBlock(b)
 }
 
 type Expression struct {
