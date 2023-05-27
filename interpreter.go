@@ -125,6 +125,15 @@ func (i *Interpreter) VisitVarStmt(stmt *Var) error {
 	return nil
 }
 
+func (i *Interpreter) VisitAssign(a *Assign) (any, error) {
+	if value, err := i.Evaluate(a.value); err != nil {
+		return nil, err
+	} else {
+		i.environment.Assign(a.name, value)
+		return value, nil
+	}
+}
+
 func (i *Interpreter) VisitUnary(u *Unary) (any, error) {
 	var right interface{}
 	var err error

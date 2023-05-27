@@ -1,25 +1,27 @@
 // This is the parser implementation of the Lox language
 // It implements the following grammar
 //
-//			  program    -> statement* EOF;
-//			  decl       -> varDecl | statement;
-//			  varDecl    -> "var" IDENTIFIER ( "=" expression )? ";";
-//			  statement  -> exprStmt | printStmt;
-//			  exprStmt   -> expression ";";
-//			  printStmt  -> "print" expression ";";
-//			  expression -> equality;
-//			  equality   -> comparison ( ( "!=" | "==" ) ) comparison )*;
-//			  comparison -> term ( ( ">" | "<" | ">=" | "<=" ) term)*;
-//			  term       -> factor ( ( "+" | "-" ) factor)*;
-//				factor     -> unary ( ( "/" | "*" ) unary )*;
-//				unary      -> ( "!" | "-") unary | primary;
-//				primary    -> NUMBER     |
-//		                  STRING     |
-//						          "true"     |
-//						          "false"    |
-//						          "nil"      |
-//	                   IDENTIFIER |
-//						          "("expression")";
+// program    -> statement* EOF;
+// decl       -> varDecl | statement;
+// varDecl    -> "var" IDENTIFIER ( "=" expression )? ";";
+// statement  -> exprStmt | printStmt;
+// exprStmt   -> expression ";";
+// printStmt  -> "print" expression ";";
+// expression -> equality;
+// assignment -> IDENTIFIER "=" assignment | equality;
+// equality   -> comparison ( ( "!=" | "==" ) ) comparison )*;
+// comparison -> term ( ( ">" | "<" | ">=" | "<=" ) term)*;
+// term       -> factor ( ( "+" | "-" ) factor)*;
+// factor     -> unary ( ( "/" | "*" ) unary )*;
+// unary      -> ( "!" | "-") unary | primary;
+// primary    -> NUMBER   |
+//
+//		         STRING     |
+//						 "true"     |
+//						 "false"    |
+//						 "nil"      |
+//	           IDENTIFIER |
+//						 "("expression")";
 package main
 
 type ParseError struct {
@@ -115,7 +117,30 @@ func (p *Parser) expressionStatement() (Stmt, error) {
 }
 
 func (p *Parser) expression() (Expr, error) {
-	return p.equality()
+	return p.assignment()
+}
+
+func (p *Parser) assignment() (Expr, error) {
+	var expr Expr
+	var err error
+	expr, err = p.equality()
+	if err != nil {
+		return nil, err
+	}
+	if p.match(EQUAL) {
+		equals := p.previous()
+		value, err := p.assignment()
+		if err != nil {
+			return nil, err
+		}
+		if expr, ok := expr.(*Variable); !ok {
+			err := p.err(equals, "Invalid assignment target.")
+			return nil, &err
+		} else {
+			return &Assign{expr.name, value}, nil
+		}
+	}
+	return expr, nil
 }
 
 func (p *Parser) equality() (Expr, error) {
