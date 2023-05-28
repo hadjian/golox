@@ -60,7 +60,7 @@ func TestAddition(t *testing.T) {
 			Token{tType: SLASH, lexeme: "/"},
 			4.0,
 			reflect.TypeOf(float64(0)),
-			4.0,
+			5.0,
 		},
 		{
 			16.0,
@@ -84,18 +84,17 @@ func TestAddition(t *testing.T) {
 		b.Left = &Literal{test.left}
 		b.Operator = test.operator
 		b.Right = &Literal{test.right}
-		expr := (&AstPrinter{}).Print(&b)
 
 		output, _ := i.Evaluate(&b)
 		outValue := reflect.ValueOf(output)
 		if outValue.Type().ConvertibleTo(test.valueType) {
 			output := outValue.Convert(test.valueType).Interface()
 			if output != test.expected {
-				t.Errorf("Evaluation failed for binary %s\n", expr)
+				t.Errorf("Evaluation failed for binary %s\n", b)
 				t.Errorf("%v != %v", output, test.expected)
 			}
 		} else {
-			t.Errorf("Evaluation failed for binary %s\n", expr)
+			t.Errorf("Evaluation failed for binary %s\n", b)
 			t.Errorf("Could not cast ouput %v to float64", output)
 		}
 	}
@@ -104,4 +103,65 @@ func TestAddition(t *testing.T) {
 func TestStringify(t *testing.T) {
 	i := Interpreter{}
 	fmt.Println(i.stringify(int(134235.0)))
+}
+
+func TestScope(t *testing.T) {
+	tests := []struct {
+		src      string
+		expected []map[string]any
+	}{
+		{
+			"var a = 3; { var a = 2; a = a*2; } a = a + 1;",
+			[]map[string]any{
+				{
+					"a": 4.0,
+				},
+				{
+					"a": 4.0,
+				},
+			},
+		},
+	}
+	var createdEnvironments []*Environment
+	previous := NewEnvironment
+	NewEnvironment = func(enclosing *Environment) *Environment {
+		newEnv := previous(enclosing)
+		createdEnvironments = append(createdEnvironments, newEnv)
+		return newEnv
+	}
+
+	for _, test := range tests {
+		scanner := Scanner{}
+		parser := Parser{}
+		scanner.Source = []rune(test.src)
+		tokens := scanner.scanTokens()
+		parser.Tokens = tokens
+		stmts := parser.parse()
+		NewInterpreter().Interpret(stmts)
+		numCreated := len(createdEnvironments)
+		numExpected := len(test.expected)
+		if numCreated != numExpected {
+			msg := "Expected %d environments, but %d were created."
+			t.Errorf(msg, numExpected, numCreated)
+		}
+		for i, env := range createdEnvironments {
+			expectedEnv := test.expected[i]
+			for varname, value := range env.values {
+				expectedValue := expectedEnv[varname]
+				expectedType := reflect.TypeOf(expectedValue)
+				actualType := reflect.TypeOf(value)
+				if expectedType != actualType {
+					msg := "Expected type %v for var %s in env %d, got %v\n"
+					t.Errorf(msg, expectedType, varname, i, actualType)
+					continue
+				}
+				if reflect.ValueOf(value).Interface() != reflect.ValueOf(expectedValue).Interface() {
+					msg := "Expected %s=%v in env %d, got %v\n"
+					t.Errorf(msg, varname, expectedEnv[varname], i, value)
+				}
+			}
+		}
+		createdEnvironments = []*Environment{}
+	}
+	NewEnvironment = previous
 }

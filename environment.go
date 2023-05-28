@@ -5,7 +5,7 @@ type Environment struct {
 	values    map[string]any
 }
 
-func NewEnvironment(enclosing *Environment) *Environment {
+var NewEnvironment func(enclosing *Environment) *Environment = func(enclosing *Environment) *Environment {
 	values := make(map[string]any)
 	return &Environment{
 		enclosing,
