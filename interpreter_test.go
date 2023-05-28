@@ -121,6 +121,17 @@ func TestScope(t *testing.T) {
 				},
 			},
 		},
+		{
+			"var a = 1; { a = a+3; var b = 1; } a = a*3;",
+			[]map[string]any{
+				{
+					"a": 12.0,
+				},
+				{
+					"b": 1.0,
+				},
+			},
+		},
 	}
 	var createdEnvironments []*Environment
 	previous := NewEnvironment
