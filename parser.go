@@ -4,7 +4,8 @@
 // program    -> statement* EOF;
 // decl       -> varDecl | statement;
 // varDecl    -> "var" IDENTIFIER ( "=" expression )? ";";
-// statement  -> exprStmt | printStmt | block;
+// statement  -> exprStmt | ifStmt | printStmt | block;
+// ifStmt     -> "if" "(" expression ")" statement ("else" statement )?;
 // block      -> "{" declaration* "}";
 // exprStmt   -> expression ";";
 // printStmt  -> "print" expression ";";
@@ -98,6 +99,9 @@ func (p *Parser) statement() (Stmt, error) {
 	if p.match(LEFT_BRACE) {
 		return p.block()
 	}
+	if p.match(IF) {
+		return p.IfStmt()
+	}
 	return p.expressionStatement()
 }
 
@@ -129,6 +133,33 @@ func (p *Parser) expressionStatement() (Stmt, error) {
 		p.consume(SEMICOLON, "Expected ';' after expression.")
 		return &Expression{expr}, nil
 	}
+}
+
+func (p *Parser) IfStmt() (Stmt, error) {
+	_, err := p.consume(LEFT_PAREN, "Expected opening '(' after 'if'.")
+	if err != nil {
+		return nil, err
+	}
+	expr, err := p.expression()
+	if err != nil {
+		return nil, err
+	}
+	_, err = p.consume(RIGHT_PAREN, "Expected closing ')' after 'if' expression.")
+	if err != nil {
+		return nil, err
+	}
+	stmt, err := p.statement()
+	if err != nil {
+		return nil, err
+	}
+	var elseStmt Stmt
+	if p.match(ELSE) {
+		elseStmt, err = p.statement()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &If{expr, stmt, elseStmt}, nil
 }
 
 func (p *Parser) expression() (Expr, error) {

@@ -168,9 +168,26 @@ func (i *Interpreter) VisitUnary(u *Unary) (any, error) {
 	return nil, nil
 }
 
-func (i *Interpreter) VisitExpression(e *Expression) error {
+func (i *Interpreter) VisitExpressionStmt(e *Expression) error {
 	if _, err := i.Evaluate(e.expr); err != nil {
 		return err
+	}
+	return nil
+}
+
+func (i *Interpreter) VisitIf(f *If) error {
+	condition, err := i.Evaluate(f.condition)
+	if err != nil {
+		return err
+	}
+	if i.isTruthy(condition) {
+		if err = i.Execute(f.thenBranch); err != nil {
+			return err
+		}
+	} else if f.elseBranch != nil {
+		if err = i.Execute(f.elseBranch); err != nil {
+			return err
+		}
 	}
 	return nil
 }

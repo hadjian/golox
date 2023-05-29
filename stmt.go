@@ -2,7 +2,8 @@ package main
 
 type StmtVisitor interface {
 	VisitBlock(b *Block) error
-	VisitExpression(e *Expression) error
+	VisitExpressionStmt(e *Expression) error
+	VisitIf(f *If) error
 	VisitPrint(p *Print) error
 	VisitVarStmt(v *Var) error
 }
@@ -24,7 +25,17 @@ type Expression struct {
 }
 
 func (e *Expression) Accept(v StmtVisitor) error {
-	return v.VisitExpression(e)
+	return v.VisitExpressionStmt(e)
+}
+
+type If struct {
+	condition  Expr
+	thenBranch Stmt
+	elseBranch Stmt
+}
+
+func (f *If) Accept(v StmtVisitor) error {
+	return v.VisitIf(f)
 }
 
 type Print struct {
