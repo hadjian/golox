@@ -74,6 +74,16 @@ func (i *Interpreter) VisitBinary(b *Binary) (any, error) {
 	}
 
 	switch b.Operator.tType {
+	case OR:
+		if i.isTruthy(left) {
+			return true, nil
+		}
+		return i.isTruthy(right), nil
+	case AND:
+		if !i.isTruthy(left) {
+			return false, nil
+		}
+		return i.isTruthy(right), nil
 	case BANG_EQUAL:
 		return left != right, nil
 	case EQUAL_EQUAL:
@@ -229,7 +239,11 @@ func (i *Interpreter) checkNumberOperands(op Token, left, right any) (float64, f
 }
 
 func (i *Interpreter) stringify(value any) string {
-	text := fmt.Sprintf("%v", value)
+	var text string
+	if runes, ok := value.([]rune); ok {
+		value = string(runes)
+	}
+	text = fmt.Sprintf("%v", value)
 	if _, ok := value.(float64); ok {
 		if strings.HasSuffix(text, ".0") {
 			text = text[:len(text)-2]

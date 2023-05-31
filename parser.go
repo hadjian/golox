@@ -1,7 +1,7 @@
 // This is the parser implementation of the Lox language
 // It implements the following grammar
 //
-// program    -> statement* EOF;
+// program    -> decl* EOF;
 // decl       -> varDecl | statement;
 // varDecl    -> "var" IDENTIFIER ( "=" expression )? ";";
 // statement  -> exprStmt | ifStmt | printStmt | block;
@@ -9,8 +9,10 @@
 // block      -> "{" declaration* "}";
 // exprStmt   -> expression ";";
 // printStmt  -> "print" expression ";";
-// expression -> equality;
-// assignment -> IDENTIFIER "=" assignment | equality;
+// expression -> assignment;
+// assignment -> IDENTIFIER "=" assignment | logic_or;
+// logic_or   -> logic_and ( "or" logic_and)*;
+// logic_and  -> equality ( "and" equality)*;
 // equality   -> comparison ( ( "!=" | "==" ) ) comparison )*;
 // comparison -> term ( ( ">" | "<" | ">=" | "<=" ) term)*;
 // term       -> factor ( ( "+" | "-" ) factor)*;
@@ -169,7 +171,7 @@ func (p *Parser) expression() (Expr, error) {
 func (p *Parser) assignment() (Expr, error) {
 	var expr Expr
 	var err error
-	expr, err = p.equality()
+	expr, err = p.logic_or()
 	if err != nil {
 		return nil, err
 	}
@@ -184,6 +186,38 @@ func (p *Parser) assignment() (Expr, error) {
 			return nil, &err
 		} else {
 			return &Assign{expr.name, value}, nil
+		}
+	}
+	return expr, nil
+}
+
+func (p *Parser) logic_or() (Expr, error) {
+	expr, err := p.logic_and()
+	if err != nil {
+		return nil, err
+	}
+	for p.match(OR) {
+		operator := p.previous()
+		if right, err := p.logic_and(); err != nil {
+			return nil, err
+		} else {
+			expr = &Binary{expr, operator, right}
+		}
+	}
+	return expr, nil
+}
+
+func (p *Parser) logic_and() (Expr, error) {
+	expr, err := p.equality()
+	if err != nil {
+		return nil, err
+	}
+	for p.match(AND) {
+		operator := p.previous()
+		if right, err := p.equality(); err != nil {
+			return nil, err
+		} else {
+			expr = &Binary{expr, operator, right}
 		}
 	}
 	return expr, nil
