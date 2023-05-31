@@ -201,7 +201,7 @@ func (p *Parser) logic_or() (Expr, error) {
 		if right, err := p.logic_and(); err != nil {
 			return nil, err
 		} else {
-			expr = &Binary{expr, operator, right}
+			expr = &Logical{expr, operator, right}
 		}
 	}
 	return expr, nil
@@ -217,7 +217,7 @@ func (p *Parser) logic_and() (Expr, error) {
 		if right, err := p.equality(); err != nil {
 			return nil, err
 		} else {
-			expr = &Binary{expr, operator, right}
+			expr = &Logical{expr, operator, right}
 		}
 	}
 	return expr, nil

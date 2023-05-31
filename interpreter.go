@@ -74,16 +74,6 @@ func (i *Interpreter) VisitBinary(b *Binary) (any, error) {
 	}
 
 	switch b.Operator.tType {
-	case OR:
-		if i.isTruthy(left) {
-			return true, nil
-		}
-		return i.isTruthy(right), nil
-	case AND:
-		if !i.isTruthy(left) {
-			return false, nil
-		}
-		return i.isTruthy(right), nil
 	case BANG_EQUAL:
 		return left != right, nil
 	case EQUAL_EQUAL:
@@ -132,6 +122,23 @@ func (i *Interpreter) VisitGrouping(g *Grouping) (any, error) {
 
 func (i *Interpreter) VisitLiteral(l *Literal) (any, error) {
 	return l.Value, nil
+}
+
+func (i *Interpreter) VisitLogical(l *Logical) (any, error) {
+	left, err := i.Evaluate(l.left)
+	if err != nil {
+		return nil, err
+	}
+	if l.operator.tType == OR {
+		if i.isTruthy(left) {
+			return left, nil
+		}
+	} else {
+		if !i.isTruthy(left) {
+			return left, nil
+		}
+	}
+	return i.Evaluate(l.right)
 }
 
 func (i *Interpreter) VisitVariableExpr(expr *Variable) (any, error) {
