@@ -192,6 +192,17 @@ func (i *Interpreter) VisitExpressionStmt(e *Expression) error {
 	return nil
 }
 
+func (i *Interpreter) VisitWhile(w *While) error {
+	loop, _ := i.Evaluate(w.condition)
+	for i.isTruthy(loop) {
+		if err := i.Execute(w.body); err != nil {
+			return err
+		}
+		loop, _ = i.Evaluate(w.condition)
+	}
+	return nil
+}
+
 func (i *Interpreter) VisitIf(f *If) error {
 	condition, err := i.Evaluate(f.condition)
 	if err != nil {

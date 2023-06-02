@@ -4,7 +4,8 @@
 // program    -> decl* EOF;
 // decl       -> varDecl | statement;
 // varDecl    -> "var" IDENTIFIER ( "=" expression )? ";";
-// statement  -> exprStmt | ifStmt | printStmt | block;
+// statement  -> exprStmt | ifStmt | printStmt | whileStmt | block;
+// whileStmt  -> "while" "(" expression ")" statement;
 // ifStmt     -> "if" "(" expression ")" statement ("else" statement )?;
 // block      -> "{" declaration* "}";
 // exprStmt   -> expression ";";
@@ -101,8 +102,11 @@ func (p *Parser) statement() (Stmt, error) {
 	if p.match(LEFT_BRACE) {
 		return p.block()
 	}
+	if p.match(WHILE) {
+		return p.whileStmt()
+	}
 	if p.match(IF) {
-		return p.IfStmt()
+		return p.ifStmt()
 	}
 	return p.expressionStatement()
 }
@@ -137,7 +141,28 @@ func (p *Parser) expressionStatement() (Stmt, error) {
 	}
 }
 
-func (p *Parser) IfStmt() (Stmt, error) {
+func (p *Parser) whileStmt() (Stmt, error) {
+	_, err := p.consume(LEFT_PAREN, "Expected '(' after while statement.")
+	if err != nil {
+		return nil, err
+	}
+	condition, err := p.expression()
+	if err != nil {
+		return nil, err
+	}
+	_, err = p.consume(RIGHT_PAREN, "Expected ')' after while condition.")
+	if err != nil {
+		return nil, err
+	}
+	body, err := p.statement()
+	if err != nil {
+		return nil, err
+	}
+
+	return &While{condition, body}, nil
+}
+
+func (p *Parser) ifStmt() (Stmt, error) {
 	_, err := p.consume(LEFT_PAREN, "Expected opening '(' after 'if'.")
 	if err != nil {
 		return nil, err
