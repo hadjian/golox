@@ -26,7 +26,7 @@ func TestIsTruthy(t *testing.T) {
 	}
 }
 
-func TestAddition(t *testing.T) {
+func TestBinary(t *testing.T) {
 	tests := []struct {
 		left      any
 		operator  Token
@@ -60,7 +60,7 @@ func TestAddition(t *testing.T) {
 			Token{tType: SLASH, lexeme: "/"},
 			4.0,
 			reflect.TypeOf(float64(0)),
-			5.0,
+			4.0,
 		},
 		{
 			16.0,
@@ -90,7 +90,7 @@ func TestAddition(t *testing.T) {
 		if outValue.Type().ConvertibleTo(test.valueType) {
 			output := outValue.Convert(test.valueType).Interface()
 			if output != test.expected {
-				t.Errorf("Evaluation failed for binary %s\n", b)
+				t.Errorf("Evaluation failed for binary %v %v %v\n", b.Left, b.Operator.lexeme, b.Right)
 				t.Errorf("%v != %v", output, test.expected)
 			}
 		} else {
