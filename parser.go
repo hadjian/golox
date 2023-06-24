@@ -148,18 +148,39 @@ func (p *Parser) forStmt() Stmt {
 		initializer = p.expressionStmt()
 	}
 
-	// condition := p.expressionStmt()
-	// increment := p.expressionStmt()
-	// stmt := p.statement()
+	var condition Expr
+	if !p.check(SEMICOLON) {
+		condition = p.expression()
+	}
+	p.consume(SEMICOLON, "Expect ';' after loop condition.")
 
-	var stmts []Stmt
-	stmts = append(stmts, initializer)
+	var increment Expr
+	if !p.check(RIGHT_PAREN) {
+		increment = p.expression()
+	}
 
-	// if stmtss, ok :=
-	// while := &While{condition, }
+	p.consume(RIGHT_PAREN, "Expect ')' after for clause.")
 
-	p.consume(RIGHT_PAREN, "Expected ')' after for condition.")
-	return &While{}
+	body := p.statement()
+
+	if increment != nil {
+		body = &Block{
+			[]Stmt{body, &Expression{increment}},
+		}
+	}
+
+	if condition == nil {
+		condition = &Literal{true}
+	}
+	body = &While{condition, body}
+
+	if initializer != nil {
+		body = &Block{
+			[]Stmt{initializer, body},
+		}
+	}
+
+	return body
 }
 
 func (p *Parser) ifStmt() Stmt {
