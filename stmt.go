@@ -1,32 +1,32 @@
 package main
 
 type StmtVisitor interface {
-	VisitBlock(b *Block) error
-	VisitExpressionStmt(e *Expression) error
-	VisitWhile(w *While) error
-	VisitIf(f *If) error
-	VisitPrint(p *Print) error
-	VisitVarStmt(v *Var) error
+	VisitBlock(b *Block)
+	VisitExpressionStmt(e *Expression)
+	VisitWhile(w *While)
+	VisitIf(f *If)
+	VisitPrint(p *Print)
+	VisitVarStmt(v *Var)
 }
 
 type Stmt interface {
-	Accept(v StmtVisitor) error
+	Accept(v StmtVisitor)
 }
 
 type Block struct {
 	statements []Stmt
 }
 
-func (b *Block) Accept(v StmtVisitor) error {
-	return v.VisitBlock(b)
+func (b *Block) Accept(v StmtVisitor) {
+	v.VisitBlock(b)
 }
 
 type Expression struct {
 	expr Expr
 }
 
-func (e *Expression) Accept(v StmtVisitor) error {
-	return v.VisitExpressionStmt(e)
+func (e *Expression) Accept(v StmtVisitor) {
+	v.VisitExpressionStmt(e)
 }
 
 type While struct {
@@ -34,8 +34,8 @@ type While struct {
 	body      Stmt
 }
 
-func (w *While) Accept(v StmtVisitor) error {
-	return v.VisitWhile(w)
+func (w *While) Accept(v StmtVisitor) {
+	v.VisitWhile(w)
 }
 
 type If struct {
@@ -44,16 +44,16 @@ type If struct {
 	elseBranch Stmt
 }
 
-func (f *If) Accept(v StmtVisitor) error {
-	return v.VisitIf(f)
+func (f *If) Accept(v StmtVisitor) {
+	v.VisitIf(f)
 }
 
 type Print struct {
 	expr Expr
 }
 
-func (p *Print) Accept(v StmtVisitor) error {
-	return v.VisitPrint(p)
+func (p *Print) Accept(v StmtVisitor) {
+	v.VisitPrint(p)
 }
 
 type Var struct {
@@ -61,6 +61,6 @@ type Var struct {
 	initializer Expr
 }
 
-func (vr *Var) Accept(v StmtVisitor) error {
-	return v.VisitVarStmt(vr)
+func (vr *Var) Accept(v StmtVisitor) {
+	v.VisitVarStmt(vr)
 }

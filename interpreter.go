@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 )
@@ -27,206 +26,166 @@ func NewInterpreter() *Interpreter {
 }
 
 func (i *Interpreter) Interpret(stmts []Stmt) {
-	for _, stmt := range stmts {
-		if err := i.Execute(stmt); err != nil {
-			runtimeError(err)
-			break
+	defer func() {
+		if err := recover(); err != nil {
+			runtimeError(err.(error))
 		}
+	}()
+	for _, stmt := range stmts {
+		i.Execute(stmt)
 	}
 }
 
-func (i *Interpreter) Execute(stmt Stmt) error {
-	return stmt.Accept(i)
+func (i *Interpreter) Execute(stmt Stmt) {
+	stmt.Accept(i)
 }
 
-func (i *Interpreter) VisitBlock(b *Block) error {
+func (i *Interpreter) VisitBlock(b *Block) {
 	i.executeBlock(b.statements, NewEnvironment(i.environment))
-	return nil
 }
 
 func (i *Interpreter) executeBlock(stmts []Stmt, env *Environment) {
 	previous := i.environment
 	i.environment = env
+	defer func() {
+		i.environment = previous
+	}()
 	for _, stmt := range stmts {
-		if err := i.Execute(stmt); err != nil {
-			break
-		}
+		i.Execute(stmt)
 	}
-	i.environment = previous
 }
 
-func (i *Interpreter) Evaluate(expr Expr) (any, error) {
-	value, err := expr.Accept(i)
-	if err != nil {
-		return nil, errors.New("Error evaluating expression")
-	}
-	return value, nil
+func (i *Interpreter) Evaluate(expr Expr) any {
+	return expr.Accept(i)
 }
 
-func (i *Interpreter) VisitBinary(b *Binary) (any, error) {
-	var left, right any
-	var err error
-	if left, err = i.Evaluate(b.Left); err != nil {
-		return nil, err
-	}
-	if right, err = i.Evaluate(b.Right); err != nil {
-		return nil, err
-	}
+func (i *Interpreter) VisitBinary(b *Binary) any {
+	left := i.Evaluate(b.Left)
+	right := i.Evaluate(b.Right)
 
 	switch b.Operator.tType {
 	case BANG_EQUAL:
-		return left != right, nil
+		return left != right
 	case EQUAL_EQUAL:
-		return left == right, nil
+		return left == right
 	case GREATER:
-		left, right, err := i.checkNumberOperands(b.Operator, left, right)
-		return left > right, err
+		left, right := i.checkNumberOperands(b.Operator, left, right)
+		return left > right
 	case GREATER_EQUAL:
-		left, right, err := i.checkNumberOperands(b.Operator, left, right)
-		return left >= right, err
+		left, right := i.checkNumberOperands(b.Operator, left, right)
+		return left >= right
 	case LESS:
-		left, right, err := i.checkNumberOperands(b.Operator, left, right)
-		return left < right, err
+		left, right := i.checkNumberOperands(b.Operator, left, right)
+		return left < right
 	case LESS_EQUAL:
-		left, right, err := i.checkNumberOperands(b.Operator, left, right)
-		return left <= right, err
+		left, right := i.checkNumberOperands(b.Operator, left, right)
+		return left <= right
 	case MINUS:
-		left, right, err := i.checkNumberOperands(b.Operator, left, right)
-		return left - right, err
+		left, right := i.checkNumberOperands(b.Operator, left, right)
+		return left - right
 	case PLUS:
 		if left, ok := left.(float64); ok {
 			if right, ok := right.(float64); ok {
-				return left + right, nil
+				return left + right
 			}
 		}
 		if left, ok := left.(string); ok {
 			if right, ok := right.(string); ok {
-				return left + right, nil
+				return left + right
 			}
 		}
 		msg := "Operands must be two numbers or two strings."
-		return nil, &RuntimeError{b.Operator, msg}
+		panic(RuntimeError{b.Operator, msg})
 	case SLASH:
-		left, right, err := i.checkNumberOperands(b.Operator, left, right)
-		return left / right, err
+		left, right := i.checkNumberOperands(b.Operator, left, right)
+		return left / right
 	case STAR:
-		left, right, err := i.checkNumberOperands(b.Operator, left, right)
-		return left * right, err
+		left, right := i.checkNumberOperands(b.Operator, left, right)
+		return left * right
 	}
-	return nil, nil
+	return nil
 }
 
-func (i *Interpreter) VisitGrouping(g *Grouping) (any, error) {
+func (i *Interpreter) VisitCallExpr(c *Call) any {
+	return i.Evaluate(c.callee)
+}
+
+func (i *Interpreter) VisitGrouping(g *Grouping) any {
 	return i.Evaluate(g.Expression)
 }
 
-func (i *Interpreter) VisitLiteral(l *Literal) (any, error) {
-	return l.Value, nil
+func (i *Interpreter) VisitLiteral(l *Literal) any {
+	return l.Value
 }
 
-func (i *Interpreter) VisitLogical(l *Logical) (any, error) {
-	left, err := i.Evaluate(l.left)
-	if err != nil {
-		return nil, err
-	}
+func (i *Interpreter) VisitLogical(l *Logical) any {
+	left := i.Evaluate(l.left)
 	if l.operator.tType == OR {
 		if i.isTruthy(left) {
-			return left, nil
+			return left
 		}
 	} else {
 		if !i.isTruthy(left) {
-			return left, nil
+			return left
 		}
 	}
 	return i.Evaluate(l.right)
 }
 
-func (i *Interpreter) VisitVariableExpr(expr *Variable) (any, error) {
+func (i *Interpreter) VisitVariableExpr(expr *Variable) any {
 	return i.environment.Get(expr.name)
 }
 
-func (i *Interpreter) VisitVarStmt(stmt *Var) error {
+func (i *Interpreter) VisitVarStmt(stmt *Var) {
 	var value any
-	var err error
 	if stmt.initializer != nil {
-		if value, err = i.Evaluate(stmt.initializer); err != nil {
-			return err
-		}
+		value = i.Evaluate(stmt.initializer)
 	}
 	i.environment.Define(stmt.name.lexeme, value)
-	return nil
 }
 
-func (i *Interpreter) VisitAssign(a *Assign) (any, error) {
-	if value, err := i.Evaluate(a.value); err != nil {
-		return nil, err
-	} else {
-		i.environment.Assign(a.name, value)
-		return value, nil
-	}
+func (i *Interpreter) VisitAssign(a *Assign) any {
+	value := i.Evaluate(a.value)
+	i.environment.Assign(a.name, value)
+	return value
 }
 
-func (i *Interpreter) VisitUnary(u *Unary) (any, error) {
-	var right interface{}
-	var err error
-	if right, err = i.Evaluate(u.Right); err != nil {
-		return nil, err
-	}
+func (i *Interpreter) VisitUnary(u *Unary) any {
+	right := i.Evaluate(u.Right)
 	switch u.Operator.tType {
 	case BANG:
-		return !i.isTruthy(right), nil
+		return !i.isTruthy(right)
 	case MINUS:
-		if right, err := i.checkNumberOperand(u.Operator, right); err != nil {
-			return right, err
-		} else {
-			return -right, nil
-		}
-	}
-	return nil, nil
-}
-
-func (i *Interpreter) VisitExpressionStmt(e *Expression) error {
-	if _, err := i.Evaluate(e.expr); err != nil {
-		return err
+		number := i.checkNumberOperand(u.Operator, right)
+		return -number
 	}
 	return nil
 }
 
-func (i *Interpreter) VisitWhile(w *While) error {
-	loop, _ := i.Evaluate(w.condition)
+func (i *Interpreter) VisitExpressionStmt(e *Expression) {
+	i.Evaluate(e.expr)
+}
+
+func (i *Interpreter) VisitWhile(w *While) {
+	loop := i.Evaluate(w.condition)
 	for i.isTruthy(loop) {
-		if err := i.Execute(w.body); err != nil {
-			return err
-		}
-		loop, _ = i.Evaluate(w.condition)
+		i.Execute(w.body)
+		loop = i.Evaluate(w.condition)
 	}
-	return nil
 }
 
-func (i *Interpreter) VisitIf(f *If) error {
-	condition, err := i.Evaluate(f.condition)
-	if err != nil {
-		return err
-	}
+func (i *Interpreter) VisitIf(f *If) {
+	condition := i.Evaluate(f.condition)
 	if i.isTruthy(condition) {
-		if err = i.Execute(f.thenBranch); err != nil {
-			return err
-		}
+		i.Execute(f.thenBranch)
 	} else if f.elseBranch != nil {
-		if err = i.Execute(f.elseBranch); err != nil {
-			return err
-		}
+		i.Execute(f.elseBranch)
 	}
-	return nil
 }
 
-func (i *Interpreter) VisitPrint(p *Print) error {
-	if value, err := i.Evaluate(p.expr); err != nil {
-		return err
-	} else {
-		fmt.Println(i.stringify(value))
-	}
-	return nil
+func (i *Interpreter) VisitPrint(p *Print) {
+	value := i.Evaluate(p.expr)
+	fmt.Println(i.stringify(value))
 }
 
 func (i *Interpreter) isTruthy(value any) bool {
@@ -239,21 +198,21 @@ func (i *Interpreter) isTruthy(value any) bool {
 	return true
 }
 
-func (i *Interpreter) checkNumberOperand(op Token, value any) (float64, error) {
+func (i *Interpreter) checkNumberOperand(op Token, value any) float64 {
 	if number, ok := value.(float64); !ok {
-		return number, &RuntimeError{op, "Operand must be a number."}
+		panic(RuntimeError{op, "Operand must be a number."})
 	} else {
-		return number, nil
+		return number
 	}
 }
 
-func (i *Interpreter) checkNumberOperands(op Token, left, right any) (float64, float64, error) {
+func (i *Interpreter) checkNumberOperands(op Token, left, right any) (float64, float64) {
 	l, ok1 := left.(float64)
 	r, ok2 := right.(float64)
 	if !ok1 || !ok2 {
-		return l, r, &RuntimeError{op, "Operands must be numbers."}
+		panic(RuntimeError{op, "Operands must be numbers."})
 	}
-	return l, r, nil
+	return l, r
 }
 
 func (i *Interpreter) stringify(value any) string {

@@ -23,7 +23,9 @@
 // comparison -> term ( ( ">" | "<" | ">=" | "<=" ) term)*;
 // term       -> factor ( ( "+" | "-" ) factor)*;
 // factor     -> unary ( ( "/" | "*" ) unary )*;
-// unary      -> ( "!" | "-") unary | primary;
+// unary      -> ( "!" | "-") unary | call;
+// call       -> primary ( "(" arguments? ")" )*;
+// arguments  -> expression ( "," expression )*;
 // primary    -> NUMBER   |
 //
 //		         STRING     |
@@ -296,7 +298,37 @@ func (p *Parser) unary() Expr {
 		expr := p.unary()
 		return &Unary{op, expr}
 	}
-	return p.primary()
+	return p.call()
+}
+
+func (p *Parser) call() Expr {
+	expr := p.primary()
+
+	for true {
+		if p.match(LEFT_PAREN) {
+			expr = p.finishCall(expr)
+		} else {
+			break
+		}
+	}
+
+	return expr
+}
+
+func (p *Parser) finishCall(callee Expr) Expr {
+	var arguments []Expr
+	if !p.check(RIGHT_PAREN) {
+		for ok := true; ok; p.match(COMMA) {
+			if len(arguments) >= 255 {
+				p.err(p.peek(), "Can't have more than 255 arguments")
+			}
+			arguments = append(arguments, p.expression())
+		}
+	}
+
+	paren := p.consume(RIGHT_PAREN, "Expect ')' after arguments.")
+
+	return &Call{callee, paren, arguments}
 }
 
 func (p *Parser) primary() Expr {

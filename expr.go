@@ -1,17 +1,18 @@
 package main
 
 type ExprVisitor interface {
-	VisitAssign(b *Assign) (any, error)
-	VisitBinary(b *Binary) (any, error)
-	VisitGrouping(g *Grouping) (any, error)
-	VisitLiteral(l *Literal) (any, error)
-	VisitLogical(l *Logical) (any, error)
-	VisitVariableExpr(v *Variable) (any, error)
-	VisitUnary(u *Unary) (any, error)
+	VisitAssign(b *Assign) any
+	VisitBinary(b *Binary) any
+	VisitCallExpr(c *Call) any
+	VisitGrouping(g *Grouping) any
+	VisitLiteral(l *Literal) any
+	VisitLogical(l *Logical) any
+	VisitVariableExpr(v *Variable) any
+	VisitUnary(u *Unary) any
 }
 
 type Expr interface {
-	Accept(v ExprVisitor) (any, error)
+	Accept(v ExprVisitor) any
 }
 
 type Assign struct {
@@ -19,7 +20,7 @@ type Assign struct {
 	value Expr
 }
 
-func (a *Assign) Accept(v ExprVisitor) (any, error) {
+func (a *Assign) Accept(v ExprVisitor) any {
 	return v.VisitAssign(a)
 }
 
@@ -29,15 +30,25 @@ type Binary struct {
 	Right    Expr
 }
 
-func (b *Binary) Accept(v ExprVisitor) (any, error) {
+func (b *Binary) Accept(v ExprVisitor) any {
 	return v.VisitBinary(b)
+}
+
+type Call struct {
+	callee    Expr
+	paren     Token
+	arguments []Expr
+}
+
+func (c *Call) Accept(v ExprVisitor) any {
+	return v.VisitCallExpr(c)
 }
 
 type Grouping struct {
 	Expression Expr
 }
 
-func (g *Grouping) Accept(v ExprVisitor) (any, error) {
+func (g *Grouping) Accept(v ExprVisitor) any {
 	return v.VisitGrouping(g)
 }
 
@@ -45,7 +56,7 @@ type Literal struct {
 	Value any
 }
 
-func (l *Literal) Accept(v ExprVisitor) (any, error) {
+func (l *Literal) Accept(v ExprVisitor) any {
 	return v.VisitLiteral(l)
 }
 
@@ -55,7 +66,7 @@ type Logical struct {
 	right    Expr
 }
 
-func (l *Logical) Accept(v ExprVisitor) (any, error) {
+func (l *Logical) Accept(v ExprVisitor) any {
 	return v.VisitLogical(l)
 }
 
@@ -63,7 +74,7 @@ type Variable struct {
 	name Token
 }
 
-func (ev *Variable) Accept(v ExprVisitor) (any, error) {
+func (ev *Variable) Accept(v ExprVisitor) any {
 	return v.VisitVariableExpr(ev)
 }
 
@@ -72,6 +83,6 @@ type Unary struct {
 	Right    Expr
 }
 
-func (u *Unary) Accept(v ExprVisitor) (any, error) {
+func (u *Unary) Accept(v ExprVisitor) any {
 	return v.VisitUnary(u)
 }

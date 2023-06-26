@@ -85,7 +85,7 @@ func TestBinary(t *testing.T) {
 		b.Operator = test.operator
 		b.Right = &Literal{test.right}
 
-		output, _ := i.Evaluate(&b)
+		output := i.Evaluate(&b)
 		outValue := reflect.ValueOf(output)
 		if outValue.Type().ConvertibleTo(test.valueType) {
 			output := outValue.Convert(test.valueType).Interface()

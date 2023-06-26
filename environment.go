@@ -17,24 +17,24 @@ func (e *Environment) Define(name string, value any) {
 	e.values[name] = value
 }
 
-func (e *Environment) Get(name Token) (any, error) {
+func (e *Environment) Get(name Token) any {
 	if value, ok := e.values[name.lexeme]; !ok {
 		errMsg := "Undefined variable '" + name.lexeme + "'."
 		if e.enclosing != nil {
 			return e.enclosing.Get(name)
 		}
-		return nil, &RuntimeError{name, errMsg}
+		panic(RuntimeError{name, errMsg})
 	} else {
-		return value, nil
+		return value
 	}
 }
 
-func (e *Environment) Assign(name Token, value any) error {
+func (e *Environment) Assign(name Token, value any) any {
 	if _, ok := e.values[name.lexeme]; !ok {
 		if e.enclosing != nil {
 			return e.enclosing.Assign(name, value)
 		}
-		return &RuntimeError{name, "Undefined variable '" + name.lexeme + "'."}
+		panic(RuntimeError{name, "Undefined variable '" + name.lexeme + "'."})
 	}
 	e.values[name.lexeme] = value
 	return nil
