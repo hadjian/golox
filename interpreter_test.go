@@ -142,13 +142,22 @@ func TestScope(t *testing.T) {
 	}
 
 	for _, test := range tests {
+		// init
 		scanner := Scanner{}
 		parser := Parser{}
+		interpreter := NewInterpreter()
+
+		// merge globals of new interpreter with test env
+		for k, v := range interpreter.globals.values {
+			test.expected[0][k] = v
+		}
+
 		scanner.Source = []rune(test.src)
 		tokens := scanner.scanTokens()
 		parser.Tokens = tokens
 		stmts := parser.parse()
-		NewInterpreter().Interpret(stmts)
+
+		interpreter.Interpret(stmts)
 		numCreated := len(createdEnvironments)
 		numExpected := len(test.expected)
 		if numCreated != numExpected {

@@ -16,13 +16,18 @@ func (re *RuntimeError) Error() string {
 
 type Interpreter struct {
 	environment *Environment
+	globals     *Environment
 }
 
 func NewInterpreter() *Interpreter {
 	env := NewEnvironment(nil)
-	return &Interpreter{
+	i := &Interpreter{
 		environment: env,
+		globals:     env,
 	}
+
+	i.globals.Define("clock", LoxTime{})
+	return i
 }
 
 func (i *Interpreter) Interpret(stmts []Stmt) {
@@ -107,7 +112,24 @@ func (i *Interpreter) VisitBinary(b *Binary) any {
 }
 
 func (i *Interpreter) VisitCallExpr(c *Call) any {
-	return i.Evaluate(c.callee)
+	callee := i.Evaluate(c.callee)
+
+	var arguments []any
+	for _, argument := range c.arguments {
+		arguments = append(arguments, i.Evaluate(argument))
+	}
+
+	function, ok := callee.(LoxCallable)
+	if !ok {
+		panic(RuntimeError{c.paren, "Can only call functions and classes"})
+	}
+
+	if len(arguments) != function.Arity() {
+		msg := "Expected %v arguments but got %v\n"
+		msg = fmt.Sprintf(msg, function.Arity(), len(arguments))
+		panic(RuntimeError{c.paren, msg})
+	}
+	return function.Call(i, arguments)
 }
 
 func (i *Interpreter) VisitGrouping(g *Grouping) any {
