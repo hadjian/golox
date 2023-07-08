@@ -10,7 +10,7 @@ type RuntimeError struct {
 	msg   string
 }
 
-func (re *RuntimeError) Error() string {
+func (re RuntimeError) Error() string {
 	return fmt.Sprintf("%v \n[line %v]", re.msg, re.token.line)
 }
 
@@ -186,6 +186,11 @@ func (i *Interpreter) VisitUnary(u *Unary) any {
 
 func (i *Interpreter) VisitExpressionStmt(e *Expression) {
 	i.Evaluate(e.expr)
+}
+
+func (i *Interpreter) VisitFunction(stmt *Function) {
+	function := LoxFunction{*stmt}
+	i.environment.Define(stmt.name.lexeme, function)
 }
 
 func (i *Interpreter) VisitWhile(w *While) {

@@ -173,7 +173,7 @@ func (s *Scanner) string() {
 
 	s.advance()
 
-	value := s.Source[s.start+1 : s.current-1]
+	value := string(s.Source[s.start+1 : s.current-1])
 	s.addTokenWithLiteral(STRING, value)
 }
 

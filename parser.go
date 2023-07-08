@@ -2,7 +2,10 @@
 // It implements the following grammar
 //
 // program    -> decl* EOF;
-// decl       -> varDecl | statement;
+// decl       -> funcDecl | varDecl | statement;
+// funcDecl   -> "fun" function
+// function   -> IDENTIFIER "(" parameters? ")" block;
+// paramters  -> IDENTIFIER ("," IDENTIFIER)*;
 // varDecl    -> "var" IDENTIFIER ( "=" expression )? ";";
 // statement  -> exprStmt | forStmt | ifStmt | printStmt | whileStmt | block;
 // whileStmt  -> "while" "(" expression ")" statement;
@@ -70,11 +73,34 @@ func (p *Parser) declaration() (stmt Stmt) {
 			stmt = nil
 		}
 	}()
+	if p.match(FUN) {
+		return p.function("function")
+	}
 	if p.match(VAR) {
-		stmt := p.varDeclaration()
-		return stmt
+		return p.varDeclaration()
 	}
 	return p.statement()
+}
+
+func (p *Parser) function(kind string) *Function {
+	name := p.consume(IDENTIFIER, "Expect "+kind+" name.")
+	p.consume(LEFT_PAREN, "Expect '(' after "+kind+" name.")
+
+	var parameters []Token
+	if !p.check(RIGHT_PAREN) {
+		for ok := true; ok; ok = p.match(COMMA) {
+			if len(parameters) >= 255 {
+				p.err(p.peek(), "Can't have more than 255 parameters.")
+			}
+			err := "Expect parameter name"
+			parameters = append(parameters, p.consume(IDENTIFIER, err))
+		}
+	}
+
+	p.consume(RIGHT_PAREN, "Expect ')' after parameters.")
+	p.consume(LEFT_BRACE, "Expect '{' before "+kind+" body.")
+	body := p.block()
+	return &Function{name, parameters, body}
 }
 
 func (p *Parser) varDeclaration() Stmt {
@@ -95,7 +121,7 @@ func (p *Parser) statement() Stmt {
 		return p.printStatement()
 	}
 	if p.match(LEFT_BRACE) {
-		return p.block()
+		return &Block{p.block()}
 	}
 	if p.match(WHILE) {
 		return p.whileStmt()
@@ -109,14 +135,14 @@ func (p *Parser) statement() Stmt {
 	return p.expressionStmt()
 }
 
-func (p *Parser) block() Stmt {
+func (p *Parser) block() []Stmt {
 	var statements []Stmt
 	for !p.check(RIGHT_BRACE) && !p.isAtEnd() {
 		statements = append(statements, p.declaration())
 	}
 	msg := "Expected '}' after block."
 	p.consume(RIGHT_BRACE, msg)
-	return &Block{statements}
+	return statements
 }
 
 func (p *Parser) printStatement() Stmt {
@@ -318,7 +344,7 @@ func (p *Parser) call() Expr {
 func (p *Parser) finishCall(callee Expr) Expr {
 	var arguments []Expr
 	if !p.check(RIGHT_PAREN) {
-		for ok := true; ok; p.match(COMMA) {
+		for ok := true; ok; ok = p.match(COMMA) {
 			if len(arguments) >= 255 {
 				p.err(p.peek(), "Can't have more than 255 arguments")
 			}
