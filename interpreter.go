@@ -10,6 +10,10 @@ type RuntimeError struct {
 	msg   string
 }
 
+type ReturnValue struct {
+	value any
+}
+
 func (re RuntimeError) Error() string {
 	return fmt.Sprintf("%v \n[line %v]", re.msg, re.token.line)
 }
@@ -213,6 +217,14 @@ func (i *Interpreter) VisitIf(f *If) {
 func (i *Interpreter) VisitPrint(p *Print) {
 	value := i.Evaluate(p.expr)
 	fmt.Println(i.stringify(value))
+}
+
+func (i *Interpreter) VisitReturn(r *Return) {
+	var value any
+	if r.value != nil {
+		value = i.Evaluate(r.value)
+	}
+	panic(ReturnValue{value})
 }
 
 func (i *Interpreter) isTruthy(value any) bool {

@@ -7,6 +7,7 @@ type StmtVisitor interface {
 	VisitWhile(w *While)
 	VisitIf(f *If)
 	VisitPrint(p *Print)
+	VisitReturn(r *Return)
 	VisitVarStmt(v *Var)
 }
 
@@ -65,6 +66,15 @@ type Print struct {
 
 func (p *Print) Accept(v StmtVisitor) {
 	v.VisitPrint(p)
+}
+
+type Return struct {
+	keyword Token
+	value   Expr
+}
+
+func (r *Return) Accept(v StmtVisitor) {
+	v.VisitReturn(r)
 }
 
 type Var struct {

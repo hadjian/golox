@@ -7,7 +7,16 @@
 // function   -> IDENTIFIER "(" parameters? ")" block;
 // paramters  -> IDENTIFIER ("," IDENTIFIER)*;
 // varDecl    -> "var" IDENTIFIER ( "=" expression )? ";";
-// statement  -> exprStmt | forStmt | ifStmt | printStmt | whileStmt | block;
+// statement  ->  exprStmt   |
+//
+//		            forStmt    |
+//		            ifStmt     |
+//	              printStmt  |
+//	              returnStmt |
+//	              whileStmt  |
+//	              block;
+//
+// returnStmt -> "return" expression? ";";
 // whileStmt  -> "while" "(" expression ")" statement;
 // ifStmt     -> "if" "(" expression ")" statement ("else" statement )?;
 // block      -> "{" declaration* "}";
@@ -120,6 +129,9 @@ func (p *Parser) statement() Stmt {
 	if p.match(PRINT) {
 		return p.printStatement()
 	}
+	if p.match(RETURN) {
+		return p.returnStmt()
+	}
 	if p.match(LEFT_BRACE) {
 		return &Block{p.block()}
 	}
@@ -155,6 +167,16 @@ func (p *Parser) expressionStmt() Stmt {
 	expr := p.expression()
 	p.consume(SEMICOLON, "Expected ';' after expression.")
 	return &Expression{expr}
+}
+
+func (p *Parser) returnStmt() Stmt {
+	keyword := p.previous()
+	var value Expr
+	if !p.check(SEMICOLON) {
+		value = p.expression()
+	}
+	p.consume(SEMICOLON, "Expect ';' after return statement.")
+	return &Return{keyword, value}
 }
 
 func (p *Parser) whileStmt() Stmt {
