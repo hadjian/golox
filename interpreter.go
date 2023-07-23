@@ -193,7 +193,7 @@ func (i *Interpreter) VisitExpressionStmt(e *Expression) {
 }
 
 func (i *Interpreter) VisitFunction(stmt *Function) {
-	function := LoxFunction{*stmt}
+	function := LoxFunction{*stmt, *i.environment}
 	i.environment.Define(stmt.name.lexeme, function)
 }
 

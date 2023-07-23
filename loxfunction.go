@@ -2,10 +2,11 @@ package main
 
 type LoxFunction struct {
 	declaration Function
+	closure     Environment
 }
 
 func (l LoxFunction) Call(i *Interpreter, args []any) (rv any) {
-	env := NewEnvironment(i.globals)
+	env := NewEnvironment(&l.closure)
 	for i := 0; i < len(l.declaration.params); i++ {
 		env.Define(l.declaration.params[i].lexeme, args[i])
 	}
