@@ -68,6 +68,8 @@ func run(script string) {
 	if hadError {
 		return
 	}
+	resolver := NewResolver(*interpreter)
+	resolver.resolveStmts(stmt)
 	interpreter.Interpret(stmt)
 }
 

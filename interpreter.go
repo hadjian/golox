@@ -21,6 +21,7 @@ func (re RuntimeError) Error() string {
 type Interpreter struct {
 	environment *Environment
 	globals     *Environment
+	locals      map[Expr]int
 }
 
 func NewInterpreter() *Interpreter {
@@ -28,6 +29,7 @@ func NewInterpreter() *Interpreter {
 	i := &Interpreter{
 		environment: env,
 		globals:     env,
+		locals:      map[Expr]int{},
 	}
 
 	i.globals.Define("clock", LoxTime{})
@@ -159,7 +161,16 @@ func (i *Interpreter) VisitLogical(l *Logical) any {
 }
 
 func (i *Interpreter) VisitVariableExpr(expr *Variable) any {
-	return i.environment.Get(expr.name)
+	return i.LookUpVariable(expr.name, expr)
+}
+
+func (i *Interpreter) LookUpVariable(name Token, expr Expr) any {
+	distance, ok := i.locals[expr]
+	if ok != false {
+		return i.environment.GetAt(distance, name.lexeme)
+	} else {
+		return i.globals.Get(name)
+	}
 }
 
 func (i *Interpreter) VisitVarStmt(stmt *Var) {
@@ -172,7 +183,14 @@ func (i *Interpreter) VisitVarStmt(stmt *Var) {
 
 func (i *Interpreter) VisitAssign(a *Assign) any {
 	value := i.Evaluate(a.value)
-	i.environment.Assign(a.name, value)
+
+	distance, ok := i.locals[a]
+	if ok != false {
+		i.environment.AssignAt(distance, a.name, value)
+	} else {
+		i.globals.Assign(a.name, value)
+	}
+
 	return value
 }
 
@@ -266,4 +284,8 @@ func (i *Interpreter) stringify(value any) string {
 		}
 	}
 	return text
+}
+
+func (i *Interpreter) Resolve(expr Expr, depth int) {
+	i.locals[expr] = depth
 }

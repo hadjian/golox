@@ -29,6 +29,18 @@ func (e *Environment) Get(name Token) any {
 	}
 }
 
+func (e *Environment) GetAt(distance int, name string) any {
+	return e.Ancestor(distance).values[name]
+}
+
+func (e *Environment) Ancestor(distance int) Environment {
+	env := e
+	for i := 0; i < distance; i++ {
+		env = env.enclosing
+	}
+	return *env
+}
+
 func (e *Environment) Assign(name Token, value any) any {
 	if _, ok := e.values[name.lexeme]; !ok {
 		if e.enclosing != nil {
@@ -38,4 +50,8 @@ func (e *Environment) Assign(name Token, value any) any {
 	}
 	e.values[name.lexeme] = value
 	return nil
+}
+
+func (e *Environment) AssignAt(distance int, name Token, value any) {
+	e.Ancestor(distance).values[name.lexeme] = value
 }
